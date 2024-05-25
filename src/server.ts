@@ -10,7 +10,7 @@ import { RetrieveAccountActivity } from "./lib/api/accountActivity";
 import { fetchIncomingTxBlock, validateValues, insertDonationData } from "./lib/api/incoming";
 import { connectDatabase } from "./db/config";
 import { donations } from "./db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 
 // Package is on Testnet.
 const client = new SuiClient({
@@ -82,7 +82,6 @@ app.get('/incoming_donation', async (req, res) => {
   if (tx_block) {
     let donation = validateValues(tx_block, String(streamer))
     console.log('Donation', donation)
-    //TODO Make Donation Go TO DB
     if (donation) await insertDonationData(donation)
   } else {
     res.json({status: 'invalid'})
@@ -95,9 +94,19 @@ app.get('/incoming_donation', async (req, res) => {
 app.get('/check_new_donations', async (req, res) => {
     let streamer_address = req.query?.streamer_address
     let db = await connectDatabase()
-    let select = await db.select().from(donations).where(sql`recipient = ${streamer_address} AND completed = false `);
+    console.log(streamer_address)
+    let select = await db.select().from(donations).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true))) ;
     console.log(select)
-
+    if (select) {
+      //TODO changed to completed donation\
+      let update = await db.update(donations).set({completed: true}).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true))).returning();
+      console.log
+      // let select = await db.update(donations).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true))) ;
+      res.json(select)
+    } else {
+      res.json([])
+    }
+    return select
   })
 
 

@@ -41,7 +41,8 @@ export const validateValues = (tx_block:SuiTransactionBlockResponse, recipient:s
         digest: tx_block.digest,
         sender: tx_block.balanceChanges[s].owner.AddressOwner,
         recipient: tx_block.balanceChanges[r].owner.AddressOwner,
-        amount: Number(tx_block.balanceChanges[r].amount) / 1000000000
+        amount: Number(tx_block.balanceChanges[r].amount) / 1000000000, // MIST per SUI
+        message: undefined, // TODO: set this
       }
       return donation
     }
@@ -52,7 +53,7 @@ export const validateValues = (tx_block:SuiTransactionBlockResponse, recipient:s
 
 export async function insertDonationData(donation:Donation) {
   const db = await connectDatabase();
-  const insert = await db.insert(donations).values({digest: donation.digest, sender: donation.sender, recipient: donation.recipient, amount: String(donation.amount)}).returning()
+  const insert = await db.insert(donations).values({digest: donation.digest, sender: donation.sender, recipient: donation.recipient, amount: String(donation.amount), completed: false}).returning()
   console.log('insert', insert)
 
 

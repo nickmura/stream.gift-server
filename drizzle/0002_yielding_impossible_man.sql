@@ -1,0 +1,1 @@
+ALTER TABLE "donations" ALTER COLUMN "completed" SET DEFAULT false;
