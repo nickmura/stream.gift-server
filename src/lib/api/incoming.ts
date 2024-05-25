@@ -1,3 +1,5 @@
+import { connectDatabase } from "../../db/config";
+import { donations } from "../../db/schema";
 import { Donation } from "@lib/types";
 import { SuiClient, SuiTransactionBlockResponse } from "@mysten/sui.js/dist/cjs/client";
 
@@ -9,8 +11,9 @@ export async function fetchIncomingTxBlock(client: SuiClient, digest: string) {
         console.log('requesting...')
         let tx = await client.getTransactionBlock({ digest: digest, options: { showBalanceChanges: true, showEvents: true,  }});
         if (tx) {
-          tx_block = tx
           console.log('success, found tx block')
+          tx_block = tx
+          return tx_block
         } else {
           i++
         }
@@ -36,8 +39,8 @@ export const validateValues = (tx_block:SuiTransactionBlockResponse, recipient:s
     if (r > -1 && s > -1) {
       const donation = {
         digest: tx_block.digest,
-        recipient: tx_block.balanceChanges[r].owner.AddressOwner,
         sender: tx_block.balanceChanges[s].owner.AddressOwner,
+        recipient: tx_block.balanceChanges[r].owner.AddressOwner,
         amount: Number(tx_block.balanceChanges[r].amount) / 1000000000
       }
       return donation
@@ -48,6 +51,9 @@ export const validateValues = (tx_block:SuiTransactionBlockResponse, recipient:s
 }
 
 export async function insertDonationData(donation:Donation) {
+  const db = await connectDatabase();
+  const insert = await db.insert(donations).values({digest: donation.digest, sender: donation.sender, recipient: donation.recipient, amount: String(donation.amount)}).returning()
+  console.log('insert', insert)
 
 
 }

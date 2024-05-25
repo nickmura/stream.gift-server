@@ -8,6 +8,9 @@ import { getFullnodeUrl, SuiClient, SuiHTTPTransport } from "@mysten/sui.js/clie
 import { WebSocket } from "ws";
 import { RetrieveAccountActivity } from "./lib/api/accountActivity";
 import { fetchIncomingTxBlock, validateValues, insertDonationData } from "./lib/api/incoming";
+import { connectDatabase } from "./db/config";
+import { donations } from "./db/schema";
+import { eq, sql } from "drizzle-orm";
 
 // Package is on Testnet.
 const client = new SuiClient({
@@ -73,6 +76,7 @@ setInterval(async () => {
 app.get('/incoming_donation', async (req, res) => {
   let streamer = req.query?.streamer // where this is an id or an address
   let digest = req.query?.digest
+
   console.log(streamer)
   let tx_block = await fetchIncomingTxBlock(client, String(digest)) 
   if (tx_block) {
@@ -87,4 +91,13 @@ app.get('/incoming_donation', async (req, res) => {
 
 
 })
+
+app.get('/check_new_donations', async (req, res) => {
+    let streamer_address = req.query?.streamer_address
+    let db = await connectDatabase()
+    let select = await db.select().from(donations).where(sql`recipient = ${streamer_address} AND completed = false `);
+    console.log(select)
+
+  })
+
 
