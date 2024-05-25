@@ -7,7 +7,7 @@ import cors from 'cors';
 import { getFullnodeUrl, SuiClient, SuiHTTPTransport } from "@mysten/sui.js/client";
 import { WebSocket } from "ws";
 import { RetrieveAccountActivity } from "./lib/api/accountActivity";
-import { fetchIncomingTxBlock, getDonationData, validateValues } from "./lib/api/incoming";
+import { fetchIncomingTxBlock, validateValues, insertDonationData } from "./lib/api/incoming";
 
 // Package is on Testnet.
 const client = new SuiClient({
@@ -73,10 +73,13 @@ setInterval(async () => {
 app.get('/incoming_donation', async (req, res) => {
   let streamer = req.query?.streamer // where this is an id or an address
   let digest = req.query?.digest
+  console.log(streamer)
   let tx_block = await fetchIncomingTxBlock(client, String(digest)) 
   if (tx_block) {
-    let isDonation = validateValues(tx_block, String(streamer))
-    if (isDonation) getDonationData(tx_block)
+    let donation = validateValues(tx_block, String(streamer))
+    console.log('Donation', donation)
+    //TODO Make Donation Go TO DB
+    if (donation) await insertDonationData(donation)
   } else {
     res.json({status: 'invalid'})
   }
