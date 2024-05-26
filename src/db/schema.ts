@@ -5,6 +5,7 @@ export const donations = pgTable("donations", {
   id: serial("id"),
   digest: text("digest"),
   sender: text("sender"),
+  sender_suins: text('sender_suins'),
   recipient: text("recipient"),
   amount: decimal("amount"),
   message: text("message"),

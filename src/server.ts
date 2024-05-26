@@ -5,15 +5,13 @@ dotenv.config();
 import cors from 'cors';
 
 import { getFullnodeUrl, SuiClient, SuiHTTPTransport } from "@mysten/sui.js/client";
-import { WebSocket } from "ws";
-import { RetrieveAccountActivity } from "./lib/api/accountActivity";
 import { fetchIncomingTxBlock, validateValues, insertDonationData } from "./lib/api/incoming";
 import { connectDatabase } from "./db/config";
 import { donations } from "./db/schema";
 import { eq, sql, and } from "drizzle-orm";
 
 // Package is on Testnet.
-const client = new SuiClient({
+const devnet_client = new SuiClient({
     // The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
 
       url: getFullnodeUrl('devnet'),
@@ -22,6 +20,11 @@ const client = new SuiClient({
 
 });
 
+const mainnet_client = new SuiClient({
+  // The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
+    url: getFullnodeUrl('mainnet'),
+    // The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
+});
 
 const app: Express = express();
 const port = process.env.PORT || 4000;
@@ -78,9 +81,9 @@ app.get('/incoming_donation', async (req, res) => {
   let digest = req.query?.digest
 
   console.log(streamer)
-  let tx_block = await fetchIncomingTxBlock(client, String(digest)) 
+  let tx_block = await fetchIncomingTxBlock(devnet_client, String(digest)) 
   if (tx_block) {
-    let donation = validateValues(tx_block, String(streamer))
+    let donation = await validateValues(mainnet_client, tx_block, String(streamer)) // to get SUINS
     console.log('Donation', donation)
     if (donation) await insertDonationData(donation)
   } else {
@@ -94,7 +97,7 @@ app.get('/incoming_donation', async (req, res) => {
 app.get('/check_new_donations', async (req, res) => {
     let streamer_address = req.query?.streamer_address
     let db = await connectDatabase()
-    console.log(streamer_address)
+
     let select = await db.select().from(donations).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true))) ;
     console.log(select)
     if (select) {
