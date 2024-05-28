@@ -12,4 +12,11 @@ export const donations = pgTable("donations", {
   completed: boolean('completed').default(sql`false`)
 });
 
+export const users = pgTable("users", {
+  id: serial("id"),
+  preferred_username: text("preferred_username"),
+  nonce: text("nonce"),
+  streamer_address: text("streamer_address"),
+  suins: text("suins"),
 
+})

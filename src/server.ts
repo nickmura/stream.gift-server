@@ -7,7 +7,7 @@ import cors from 'cors';
 import { getFullnodeUrl, SuiClient, SuiHTTPTransport } from "@mysten/sui.js/client";
 import { fetchIncomingTxBlock, validateValues, insertDonationData } from "./lib/api/incoming";
 import { connectDatabase } from "./db/config";
-import { donations } from "./db/schema";
+import { donations, users } from "./db/schema";
 import { eq, sql, and } from "drizzle-orm";
 
 // Package is on Testnet.
@@ -95,7 +95,9 @@ app.get('/incoming_donation', async (req, res) => {
 })
 
 app.get('/check_new_donations', async (req, res) => {
+  
     let streamer_address = req.query?.streamer_address
+    console.log(streamer_address)
     let db = await connectDatabase()
 
     let select = await db.select().from(donations).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true))) ;
@@ -113,3 +115,14 @@ app.get('/check_new_donations', async (req, res) => {
   })
 
 
+app.post('/create_streamer', async (req, res) => {
+  const user = req.body;
+
+  const db = await connectDatabase();
+
+  const insert = await db.insert(users).values({preferred_username: user.preferred_username, nonce: user.nonce }).returning();
+
+  
+  res.json({insert})
+
+})
