@@ -1,6 +1,7 @@
 
 import express, { Express, Request, Response } from "express";
 import { urlencoded } from "body-parser";
+import { jwtDecode } from "jwt-decode";
 import * as jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from "dotenv";
@@ -35,6 +36,7 @@ const server = require('http').createServer(app);
 const port = process.env.PORT || 4000;
 
 app.use(cors())
+app.use(express.json());
 app.use(urlencoded({ extended: false }));
 
 app.get("/", (req: Request, res: Response) => {
@@ -118,18 +120,13 @@ app.get('/check_new_donations', async (req, res) => {
 
 /* AUTH ENDPOINTS */
 app.post("/login-streamer", async (req, res) => {
-  console.log(req.body);
   let id_token = req.body?.token || null;
-
-  console.log(id_token);
 
   if (!id_token) return res.status(400).json({
     success: false
   });
 
-  const user: any = await verifyJwtFunc(id_token);
-
-  console.log(user);
+  const user: any = jwtDecode(id_token);
 
   if (!user?.preferred_username || !user?.nonce) return res.status(400).json({
     success: false
