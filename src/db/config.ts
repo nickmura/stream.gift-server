@@ -1,6 +1,6 @@
 import { defineConfig } from "drizzle-kit";
-import { pgTable, serial, text, varchar } from "drizzle-orm/pg-core";
 import { drizzle } from "drizzle-orm/node-postgres";
+import * as schema from "./schema";
 import { Client } from "pg";
 
 
@@ -13,9 +13,9 @@ export default defineConfig({
   
 export async function connectDatabase() {
     const client = new Client({
-        connectionString: process.env.DB_URL,
-      });
+      connectionString: process.env.DB_URL,
+    });
     await client.connect();
-    const db = drizzle(client);
+    let db = drizzle(client, { schema });
     return db
 }

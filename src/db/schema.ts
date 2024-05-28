@@ -18,5 +18,5 @@ export const users = pgTable("users", {
   nonce: text("nonce"),
   streamer_address: text("streamer_address"),
   suins: text("suins"),
-
+  secret: text("secret")
 })
