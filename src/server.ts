@@ -18,11 +18,8 @@ dotenv.config();
 // Package is on Testnet.
 const devnet_client = new SuiClient({
     // The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
-
       url: getFullnodeUrl('devnet'),
       // The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
-
-
 });
 
 const mainnet_client = new SuiClient({
@@ -121,7 +118,7 @@ app.get('/check_new_donations', async (req, res) => {
 /* AUTH ENDPOINTS */
 app.post("/login-streamer", async (req, res) => {
   let id_token = req.body?.token || null;
-
+  console.log(id_token)
   if (!id_token) return res.status(400).json({
     success: false
   });
