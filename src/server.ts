@@ -118,7 +118,7 @@ app.get('/check_new_donations', async (req, res) => {
 /* AUTH ENDPOINTS */
 app.post("/login-streamer", async (req, res) => {
   let id_token = req.body?.token || null;
-  console.log(id_token)
+
   if (!id_token) return res.status(400).json({
     success: false
   });
@@ -136,7 +136,6 @@ app.post("/login-streamer", async (req, res) => {
     where: (users, { eq }) => eq(users.preferred_username, user.preferred_username),
   });
 
-  console.log(user_from_db);
   let secret;
 
   if (!user_from_db?.length) {
@@ -150,7 +149,7 @@ app.post("/login-streamer", async (req, res) => {
   }
 
   // Sign a JWT token
-  const token = jwt.sign({ secret }, (process.env.JWT_SECRET || "123"));
+  const token = jwt.sign({ secret }, (process.env.JWT_SECRET || ""));
 
   // Send it to client
   return res.send({ token });
@@ -168,7 +167,7 @@ function verifyJwt(req: any, res: any, next: any) {
     req.user = null;
 
     if (token) {
-      jwt.verify(token, (process.env.JWT_SECRET || "123"), async (err: any, decoded: any) => {
+      jwt.verify(token, (process.env.JWT_SECRET || ""), async (err: any, decoded: any) => {
         if (!err) {
           let secret = decoded.secret;
 
@@ -199,7 +198,7 @@ function verifyJwtFunc(token: string) {
   return new Promise(async (resolve, reject) => {
       if (!token) return resolve(null);
 
-      jwt.verify(token, (process.env.JWT_SECRET || "123"), async (err, decoded: any) => {
+      jwt.verify(token, (process.env.JWT_SECRET || ""), async (err, decoded: any) => {
           if (err) {
               console.log(err);
               return resolve(null);
