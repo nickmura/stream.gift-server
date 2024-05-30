@@ -12,6 +12,8 @@ import { fetchIncomingTxBlock, validateValues, insertDonationData } from "./lib/
 import { connectDatabase } from "./db/config";
 import { donations, users } from "./db/schema";
 import { eq, sql, and } from "drizzle-orm";
+import { callSponsor } from "./lib/sponsor";
+import { TransactionBlock } from "@mysten/sui.js/dist/cjs/transactions";
 
 dotenv.config();
 
@@ -77,7 +79,13 @@ setInterval(async () => {
 //   }
 // } events()
 
+app.post('/txb_sponsor', async (req, res) => {
+  const txb:TransactionBlock = req.body.txbSerialized; //@ts-ignore
+  const sponsor = await callSponsor(txb)
 
+  
+
+})
 app.get('/incoming_donation', async (req, res) => {
   let streamer = req.query?.streamer // where this is an id or an address
   let digest = req.query?.digest
