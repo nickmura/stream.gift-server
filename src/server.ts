@@ -12,7 +12,7 @@ import { fetchIncomingTxBlock, validateValues, insertDonationData } from "./lib/
 import { connectDatabase } from "./db/config";
 import { donations, users } from "./db/schema";
 import { eq, sql, and } from "drizzle-orm";
-import { callSponsor } from "./lib/sponsor";
+import { callShinamiSponsor, callSponsor } from "./lib/sponsor";
 import { TransactionBlock } from "@mysten/sui.js/dist/cjs/transactions";
 
 dotenv.config();
@@ -80,8 +80,10 @@ setInterval(async () => {
 // } events()
 
 app.post('/txb_sponsor', async (req, res) => {
-  const txb:TransactionBlock = req.body.txbSerialized; //@ts-ignore
-  const sponsor = await callSponsor(txb)
+  const txbSerialized = req.body.bytes;
+  const txbUserSignature = req.body.signature
+  const txb = TransactionBlock.from(txbSerialized) //@ts-ignore NEEDS TO BE A NON-SUI TX
+  const sponsor = await callShinamiSponsor(txb, txbUserSignature)
 
   
 

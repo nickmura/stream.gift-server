@@ -24,9 +24,10 @@ async function forNodejs() {
 }
 
 /**
- * This is an example of using sponsored transaction plugin in browser.
+ * NOTE: Gas object (SUI) cannot be used as a TransactionKind or in a GaslessTransactionData as it's inherently using gas (SUI).
+ * Has to be NFTs if aynthing...
  */
-export async function callSponsor(txb:TransactionBlock, userSignature:string) {
+export async function callShinamiSponsor(txb:TransactionBlock, userSignature:string) { // using @scallop-io/
   // Create a transaction
   const tx = new SuiTxBlock();
   tx.transferObjects(['<obj_id>'], '<sender_address>');
@@ -45,4 +46,8 @@ export async function callSponsor(txb:TransactionBlock, userSignature:string) {
   const res = await suiKit.sendShinamiSponsoredTxn(sponsoredTx, userSignature);
   
   return res;
+}
+
+export async function callSponsor() { // Manual gas station
+
 }
