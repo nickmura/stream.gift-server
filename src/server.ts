@@ -243,6 +243,20 @@ app.post("/streamer-exists", async (req: any, res) => {
   return res.send({ status: true });
 })
 
+app.post("/get-streamer", async (req: any, res) => {
+  const { username } = req.body;
+
+  if (!username) return res.send({ user: null });
+
+  const db = await connectDatabase();
+  const user_from_db = await db.query.users.findMany({
+    where: (users, { eq }) => eq(users.preferred_username, username),
+  });
+
+  if (!user_from_db?.length) return res.send({ user: null });
+  return res.send({ user: user_from_db[0] });
+})
+
 app.get("/check-streamer", verifyJwt, async (req: any, res) => {
   if (req?.user) return res.send({ user: {
     username: req.user.preferred_username,
