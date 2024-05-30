@@ -12,6 +12,7 @@ import { fetchIncomingTxBlock, validateValues, insertDonationData } from "./lib/
 import { connectDatabase } from "./db/config";
 import { donations, users } from "./db/schema";
 import { eq, sql, and } from "drizzle-orm";
+import { checkSUINS } from "./lib/api/check";
 
 dotenv.config();
 
@@ -81,16 +82,36 @@ setInterval(async () => {
 app.get('/incoming_donation', async (req, res) => {
   let streamer = req.query?.streamer // where this is an id or an address
   let digest = req.query?.digest
+  let sender = req.query?.sender
+  let message = req.query?.message
+  let signature = req.query?.signature
 
+ 
   console.log(streamer)
-  let tx_block = await fetchIncomingTxBlock(devnet_client, String(digest)) 
-  if (tx_block) {
-    let donation = await validateValues(mainnet_client, tx_block, String(streamer)) // to get SUINS
-    console.log('Donation', donation)
-    if (donation) await insertDonationData(donation)
+  if (!String(message)) {
+    let tx_block = await fetchIncomingTxBlock(devnet_client, String(digest)) 
+    if (tx_block) {
+      console.log('no message submitted')
+      let donation = await validateValues(mainnet_client, tx_block, String(sender),  String(streamer), undefined)
+      console.log('Donation', donation)
+      if (donation) await insertDonationData(donation)
+        return res.json({status: 'success', tx: digest})
+    } else {
+      res.json({status: 'invalid'})
+    }
   } else {
-    res.json({status: 'invalid'})
+    console.log('message submitted...')
+    let tx_block = await fetchIncomingTxBlock(devnet_client, String(digest)) 
+    if (tx_block) {
+      let donation = await validateValues(devnet_client, tx_block, String(sender), String(streamer), String(message) ?? undefined) // to get SUINS
+      console.log('Donation', donation)
+      if (donation) await insertDonationData(donation)
+        return res.json({status: 'success', tx: digest})
+    } else {
+      res.json({status: 'invalid'})
+    }
   }
+  
 
 
 
