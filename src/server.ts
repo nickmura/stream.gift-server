@@ -111,10 +111,6 @@ app.get('/incoming_donation', async (req, res) => {
       res.json({status: 'invalid'})
     }
   }
-  
-
-
-
 })
 
 
@@ -268,6 +264,18 @@ app.post("/streamer-exists", async (req: any, res) => {
   const user_from_db = await db.query.users.findMany({
     where: (users, { eq }) => eq(users.preferred_username, streamer),
   });
+
+  if (!user_from_db?.length) return res.send({ status: false });
+  return res.send({ status: true });
+})
+
+app.get("/get-streamer", async (req: any, res) => {
+  const username = req.query.username;
+  
+  if (!username) return res.send({ status: false });
+
+  const db = await connectDatabase();
+  const user_from_db = await db.select().from(users).where(eq(users.preferred_username, username));
 
   if (!user_from_db?.length) return res.send({ status: false });
   return res.send({ status: true });
