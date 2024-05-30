@@ -93,7 +93,7 @@ app.get('/incoming_donation', async (req, res) => {
     if (tx_block) {
       console.log('no message submitted')
       let donation = await validateValues(mainnet_client, tx_block, String(sender),  String(streamer), undefined)
-      console.log('Donation', donation)
+      console.log('Donation', donation) //@ts-ignore
       if (donation) await insertDonationData(donation)
         return res.json({status: 'success', tx: digest})
     } else {
@@ -104,7 +104,7 @@ app.get('/incoming_donation', async (req, res) => {
     let tx_block = await fetchIncomingTxBlock(devnet_client, String(digest)) 
     if (tx_block) {
       let donation = await validateValues(devnet_client, tx_block, String(sender), String(streamer), String(message) ?? undefined) // to get SUINS
-      console.log('Donation', donation)
+      console.log('Donation', donation) //@ts-ignore
       if (donation) await insertDonationData(donation)
         return res.json({status: 'success', tx: digest})
     } else {
@@ -116,6 +116,15 @@ app.get('/incoming_donation', async (req, res) => {
 
 
 })
+
+
+app.get('/check_suins', async (req, res) => {
+  const address = req.query?.address  
+  const suins = await checkSUINS(String(address))
+  if (suins) res.json(suins)
+  else res.json({status: 'null'})
+})
+
 
 app.get('/check_new_donations', async (req, res) => {
   let streamer_address = req.query?.streamer_address
@@ -273,6 +282,13 @@ app.get("/check-streamer", verifyJwt, async (req: any, res) => {
   }});
   return res.status(401);
 })
+
+
+
+								
+
+
+
 
 // Middleware -->
 function verifyJwt(req: any, res: any, next: any) {
