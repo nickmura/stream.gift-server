@@ -119,6 +119,10 @@ app.get('/check_new_donations', async (req, res) => {
 app.post("/login-streamer", async (req, res) => {
   let id_token = req.body?.token || null;
 
+  if (!process.env.JWT_SECRET) return res.status(400).json({
+    success: false
+  });
+
   if (!id_token) return res.status(400).json({
     success: false
   });
@@ -149,14 +153,89 @@ app.post("/login-streamer", async (req, res) => {
   }
 
   // Sign a JWT token
-  const token = jwt.sign({ secret }, (process.env.JWT_SECRET || ""));
+  const token = jwt.sign({ secret }, process.env.JWT_SECRET);
 
   // Send it to client
   return res.send({ token });
 })
 
+app.post("/update-streamer", verifyJwt, async (req: any, res) => {
+  const updatableFields = ["handle", "notificationSound"]; // TODO: add preference values like textToSpeech and notificationSound
+  const { update } : { update: any } = req.body;
+
+  if (!update) return res.status(400).json({
+    success: false,
+    message: "No update value is received"
+  });
+
+  interface RuleInterface {
+    validation: Boolean,
+    reason?: string
+  }
+
+  const rules: any = {
+    // Changing handles are not possible but I'll keep that -->
+    "handle": (handle: string): RuleInterface => {
+      if (handle.length < 3 || handle.length > 32) return {
+        validation: false,
+        reason: "Handle length must be between 3 and 32 characters"
+      };
+
+      // Check if only numbers and alphanumberic chars
+      if (!/^[A-Za-z0-9]*$/.test(handle)) return {
+        validation: false,
+        reason: "Handle must contain letters and numbers"
+      };
+
+      return { validation: true }
+    },
+    "notificationSound": (s: Boolean): RuleInterface => {
+      if (typeof s !== "boolean") return {
+        validation: false,
+        reason: "Invalid input"
+      };
+      return { validation: true };
+    }
+  }
+
+  const db = await connectDatabase();
+
+  for (let field of updatableFields) {
+    try {
+      if (update[field] === undefined) continue;
+
+      // Validate each data field
+      let ruleResult = rules[field](update[field]);
+      if (!ruleResult.validation)
+        return res.status(400).send({ success: false, message: ruleResult.reason })
+
+      // Update database
+      const updateQuery: typeof update = {};
+      updateQuery[field] = update[field];
+
+      await db.update(users)
+        .set(updateQuery)
+        .where(eq(users.secret, req.user.secret));
+
+    } catch(e) {
+      console.error(e);
+      return res.status(400).json({
+        sucess: false,
+        message: "An unexpected error has occured"
+      });
+    }
+  }
+
+  return res.json({ success: true });
+})
+
 app.get("/check-streamer", verifyJwt, async (req: any, res) => {
-  if (req?.user) return res.send({ user: { username: req.user.preferred_username } });
+  if (req?.user) return res.send({ user: {
+    username: req.user.preferred_username,
+    handle: req.user.handle,
+    notificationSound: req.user.notificationSound,
+    textToSpeech: req.user.textToSpeech,
+  }});
   return res.status(401);
 })
 
@@ -166,8 +245,10 @@ function verifyJwt(req: any, res: any, next: any) {
     const token = req?.headers?.["access-token"];
     req.user = null;
 
+    if (!process.env.JWT_SECRET) return res.status(401);
+
     if (token) {
-      jwt.verify(token, (process.env.JWT_SECRET || ""), async (err: any, decoded: any) => {
+      jwt.verify(token, process.env.JWT_SECRET, async (err: any, decoded: any) => {
         if (!err) {
           let secret = decoded.secret;
 
@@ -177,19 +258,19 @@ function verifyJwt(req: any, res: any, next: any) {
             where: (users, { eq }) => eq(users.secret, secret),
           });
 
-          if (!user_from_db?.length) res.status(401);
+          if (!user_from_db?.length) return res.status(401);
 
           req.user = user_from_db[0];
 
           next();
         } else {
           console.log(err);
-          res.status(401);
+          return res.status(401);
         }
       });
-    } else res.status(401);
+    } else return res.status(401);
   } catch (e) {
-    res.status(401);
+    return res.status(401);
   }
 }
 
@@ -198,7 +279,9 @@ function verifyJwtFunc(token: string) {
   return new Promise(async (resolve, reject) => {
       if (!token) return resolve(null);
 
-      jwt.verify(token, (process.env.JWT_SECRET || ""), async (err, decoded: any) => {
+      if (!process.env.JWT_SECRET) return resolve(null);
+
+      jwt.verify(token, process.env.JWT_SECRET, async (err, decoded: any) => {
           if (err) {
               console.log(err);
               return resolve(null);
@@ -211,8 +294,6 @@ function verifyJwtFunc(token: string) {
           const user_from_db = await db.query.users.findMany({
             where: (users, { eq }) => eq(users.secret, secret),
           });
-
-          console.log(user_from_db);
 
           if (!user_from_db?.length) return resolve(null);
           return resolve(user_from_db[0]);
