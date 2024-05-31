@@ -124,22 +124,27 @@ app.get('/check_suins', async (req, res) => {
 
 
 app.get('/check_new_donations', async (req, res) => {
-  let streamer_address = req.query?.streamer_address
-  console.log(streamer_address)
-  let db = await connectDatabase()
+  let username = req.query?.username?.toString() || "";
+  console.log("Checking new donations for", username);
+  
+  let db = await connectDatabase();
+  let raw_streamer_address = await db.query.users.findFirst({
+    where: (users, { eq }) => eq(users.preferred_username, username),
+  });
 
-  let select = await db.select().from(donations).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true))) ;
-  console.log(select)
+  let streamer_address: string = raw_streamer_address?.streamer_address || "";
+  if (!streamer_address) return res.status(400).send({ error_message: "Streamer cannot be found" });
+
+  let select = await db.select().from(donations).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true)));
+  console.log(select);
+
   if (select) {
-    //TODO changed to completed donation\
     let update = await db.update(donations).set({completed: true}).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true))).returning();
-    console.log
-    // let select = await db.update(donations).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true))) ;
-    res.json(select)
-  } else {
-    res.json([])
+    console.log(update);
+    return res.send(update)
   }
-  return select
+
+  return res.status(400).send({});
 })
 
 /* AUTH ENDPOINTS */
