@@ -300,8 +300,8 @@ app.post('/verifySignedAddress', async (req, res) => {
   
   const db = await connectDatabase();
   const update = await db.update(users).set({signature: body.signature, streamer_address: body.address}).where(eq(users.preferred_username, body.streamer))
-  res.json({status: true});
-  
+  if (update) res.json({status: true});
+  else res.json({status: false})
 })
 
 
