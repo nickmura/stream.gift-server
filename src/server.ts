@@ -137,9 +137,9 @@ app.get('/check_new_donations', async (req, res) => {
   let select = await db.select().from(donations).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true)));
 
   if (select) {
-    let update = await db.update(donations).set({completed: true}).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true))).returning();
-    console.log(update);
-    return res.send(update)
+    // let update = await db.update(donations).set({completed: true}).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true))).returning();
+    console.log(select);
+    return res.send(select)
   }
 
   return res.status(400).send({});
@@ -282,14 +282,22 @@ app.get("/get-streamer", async (req: any, res) => {
   const user_from_db = await db.select().from(users).where(eq(users.preferred_username, username));
 
   if (!user_from_db?.length) return res.send({ user: null });
-  console.log(user_from_db[0])
-  return res.send( user_from_db[0] );
+  const user = user_from_db[0];
+
+  return res.send({user: {
+    suins: user.suins,
+    preferred_username: user.preferred_username,
+    streamer_address: user.streamer_address,
+    notificationSound: user.notificationSound,
+    textToSpeech: user.textToSpeech,
+  }});
 })
 
 app.get("/check-streamer", verifyJwt, async (req: any, res) => {
   if (req?.user) return res.send({ user: {
-    username: req.user.preferred_username,
-    handle: req.user.handle,
+    suins: req.user.suins,
+    preferred_username: req.user.preferred_username,
+    streamer_address: req.user.streamer_address,
     notificationSound: req.user.notificationSound,
     textToSpeech: req.user.textToSpeech,
   }});
