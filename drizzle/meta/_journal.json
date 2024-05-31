@@ -57,6 +57,13 @@
       "when": 1717124853792,
       "tag": "0007_even_hiroim",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1717169511082,
+      "tag": "0008_numerous_starjammers",
+      "breakpoints": true
     }
   ]
 }

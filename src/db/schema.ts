@@ -9,7 +9,8 @@ export const donations = pgTable("donations", {
   recipient: text("recipient"),
   amount: decimal("amount"),
   message: text("message"),
-  completed: boolean('completed').default(sql`false`)
+  completed: boolean('completed').default(sql`false`),
+  streamer_name: text('streamer_name')
 });
 
 export const users = pgTable("users", {
@@ -20,6 +21,6 @@ export const users = pgTable("users", {
   suins: text("suins"),
   secret: text("secret"),
   textToSpeech: boolean("textToSpeech").default(false),
-  notificationSound: boolean("notificationSound").default(false),
+  notificationSound: boolean("notificationSound").default(true),
   signature: text("signature")
 })
