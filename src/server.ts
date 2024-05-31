@@ -125,7 +125,6 @@ app.get('/check_suins', async (req, res) => {
 
 app.get('/check_new_donations', async (req, res) => {
   let username = req.query?.username?.toString() || "";
-  console.log("Checking new donations for", username);
   
   let db = await connectDatabase();
   let raw_streamer_address = await db.query.users.findFirst({
@@ -136,7 +135,6 @@ app.get('/check_new_donations', async (req, res) => {
   if (!streamer_address) return res.status(400).send({ error_message: "Streamer cannot be found" });
 
   let select = await db.select().from(donations).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true)));
-  console.log(select);
 
   if (select) {
     let update = await db.update(donations).set({completed: true}).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true))).returning();
