@@ -137,9 +137,8 @@ app.get('/check_new_donations', async (req, res) => {
   let select = await db.select().from(donations).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true)));
 
   if (select) {
-    // let update = await db.update(donations).set({completed: true}).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true))).returning();
-    console.log(select);
-    return res.send(select)
+    let update = await db.update(donations).set({completed: true}).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true))).returning();
+    return res.send(update)
   }
 
   return res.status(400).send({});
