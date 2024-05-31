@@ -13,6 +13,7 @@ import { connectDatabase } from "./db/config";
 import { donations, users } from "./db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { checkSUINS } from "./lib/api/check";
+import { SignedAddress } from "./lib/types";
 
 dotenv.config();
 
@@ -278,7 +279,8 @@ app.get("/get-streamer", async (req: any, res) => {
   const user_from_db = await db.select().from(users).where(eq(users.preferred_username, username));
 
   if (!user_from_db?.length) return res.send({ user: null });
-  return res.send({ status: user_from_db[0] });
+  console.log(user_from_db[0])
+  return res.send( user_from_db[0] );
 })
 
 app.get("/check-streamer", verifyJwt, async (req: any, res) => {
@@ -289,6 +291,17 @@ app.get("/check-streamer", verifyJwt, async (req: any, res) => {
     textToSpeech: req.user.textToSpeech,
   }});
   return res.status(401);
+})
+
+app.post('/verifySignedAddress', async (req, res) => {
+  let body : SignedAddress = req.body
+  console.log(body)
+  //TODO: VERIFY signature
+  
+  const db = await connectDatabase();
+  const update = await db.update(users).set({signature: body.signature, streamer_address: body.address}).where(eq(users.preferred_username, body.streamer))
+  res.json({status: true});
+  
 })
 
 
