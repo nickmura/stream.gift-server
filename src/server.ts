@@ -1,5 +1,8 @@
 
 import express, { Express, Request, Response } from "express";
+import fs from 'fs'
+import https from 'node:https'
+
 import { urlencoded } from "body-parser";
 import { jwtDecode } from "jwt-decode";
 import * as jwt from 'jsonwebtoken';
@@ -14,7 +17,7 @@ import { donations, users } from "./db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { checkSUINS } from "./lib/api/check";
 import { SignedAddress } from "./lib/types";
-
+const LOCAL = process.env.LOCAL
 dotenv.config();
 
 // Package is on Testnet.
@@ -29,9 +32,16 @@ const mainnet_client = new SuiClient({
     url: getFullnodeUrl('mainnet'),
     // The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
 });
+let pk = !LOCAL ? fs.readFileSync(String(process.env.SSH_PK_DIRECTORY)) : ''
+let cert = !LOCAL ? fs.readFileSync(String(process.env.SSH_CERT_DIRECTORY)) : ''
+
+let cred = { cert: cert, key: pk }
+
 
 const app: Express = express();
-const server = require('http').createServer(app);
+
+const server = require('https').createServer(cred, app);
+const _server = require('http').createServer(app); // local
 const port = process.env.PORT || 4000;
 
 app.use(cors())
@@ -55,6 +65,16 @@ setInterval(async () => {
   // let tx = await client.getTransactionBlock({ digest: `3Hr4imSk4GDV1PhoNSLNMfMkrU5PbTaw4SRm7hX4T9cZ`, options: { showBalanceChanges: true, showEvents: true,  }})
   // console.log(tx)
 }, 6000)
+
+if (LOCAL) {
+  _server.listen(port, () => {
+    console.log(`[server]: Server is running at http://localhost:${port}`);
+  });
+} else {
+  server.listen(443, () => {
+    console.log(`[server]: Server is running at https://api.stream.gift`);
+  });
+}
 
 // async function events() {
 //   console.log(await client.getAllBalances({owner: '0x0b14ea45f57e13df1c40425e1d2089649837e72c9920eb25f657c88c14c3e5df'}))
@@ -384,6 +404,3 @@ function verifyJwtFunc(token: string) {
 }
 
 // Listener
-server.listen(port, () => {
-  console.log(`[server]: Server is running at http://localhost:${port}`);
-});
