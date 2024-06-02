@@ -21,6 +21,6 @@ export const users = pgTable("users", {
   suins: text("suins"),
   secret: text("secret"),
   textToSpeech: boolean("textToSpeech").default(false),
-  notificationSound: boolean("notificationSound").default(true),
+  notificationSound: boolean("notificationsound").default(true),
   signature: text("signature")
 })

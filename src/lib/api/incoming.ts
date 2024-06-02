@@ -5,30 +5,27 @@ import { SuiClient, SuiTransactionBlockResponse } from "@mysten/sui.js/dist/cjs/
 import { checkSUINS } from "./check";
 
 export async function fetchIncomingTxBlock(client: SuiClient, digest: string) {
+
     let tx_block = undefined
     let i = 0;
-    while (i < 50 && !tx_block) {
+    while (i <= 50 && !tx_block) {
       try {
         console.log('requesting...', digest)
-      
         let tx = await client.getTransactionBlock({ digest: digest, options: { showBalanceChanges: true, showEvents: true,  }});
         if (tx) {
           console.log('success, found tx block, ', tx)
           tx_block = tx
-          return tx_block
+          break;
         } else {
-          i++
+          tx_block = undefined 
+          i++;
         }
-  
       } catch (error) { //@ts-ignore
         console.log(error.message)
-        return undefined
       }
     }
-    if (tx_block) {
-      console.log(tx_block)
-      return tx_block
-    }
+    if (tx_block) return tx_block
+
 }
 
 export const validateValues = async (client: SuiClient, tx_block:SuiTransactionBlockResponse, sender:string, recipient:string, message:string|undefined) => {
@@ -41,9 +38,9 @@ export const validateValues = async (client: SuiClient, tx_block:SuiTransactionB
 
     if (r > -1 && s > -1) {
       const senderSUINS = await checkSUINS(String(sender))
-
+      
       console.log(tx_block.balanceChanges[s].owner, tx_block.balanceChanges[s].owner.AddressOwner)
-
+      
       const donation = {
         digest: tx_block.digest,
         sender: tx_block.balanceChanges[s].owner.AddressOwner,
