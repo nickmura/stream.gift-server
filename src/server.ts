@@ -18,8 +18,8 @@ import { eq, sql, and } from "drizzle-orm";
 import { checkSUINS } from "./lib/api/check";
 import { SignedAddress } from "./lib/types";
 
-const LOCAL = process.env.LOCAL
 dotenv.config();
+const LOCAL = process.env.LOCAL
 
 // Package is on Testnet.
 const devnet_client = new SuiClient({
@@ -40,8 +40,11 @@ let cert = !LOCAL ? fs.readFileSync(String(process.env.SSH_CERT_DIRECTORY)) : ''
 let cred = { cert: cert, key: pk }
 
 const app: Express = express();
-const server = require('https').createServer(cred, app);
-const _server = require('http').createServer(app); // local
+
+let server;
+if (LOCAL) server = require('http').createServer(app); // local
+else server = require('https').createServer(cred, app);
+
 const port = process.env.PORT || 4000;
 
 app.use(cors())
@@ -65,16 +68,6 @@ setInterval(async () => {
   // let tx = await client.getTransactionBlock({ digest: `3Hr4imSk4GDV1PhoNSLNMfMkrU5PbTaw4SRm7hX4T9cZ`, options: { showBalanceChanges: true, showEvents: true,  }})
   // console.log(tx)
 }, 6000)
-
-if (LOCAL) {
-  _server.listen(port, () => {
-    console.log(`[server]: Server is running at http://localhost:${port}`);
-  });
-} else {
-  server.listen(443, () => {
-    console.log(`[server]: Server is running at https://api.stream.gift`);
-  });
-}
 
 // async function events() {
 //   console.log(await client.getAllBalances({owner: '0x0b14ea45f57e13df1c40425e1d2089649837e72c9920eb25f657c88c14c3e5df'}))
@@ -429,6 +422,7 @@ function verifyJwtFunc(token: string) {
 }
 
 // Listener
-server.listen(port, () => {
-  console.log(`[server]: Server is running at http://localhost:${port}`);
+server.listen(LOCAL ? port : 443, () => {
+  if (LOCAL) console.log(`[server]: Server is running at http://localhost:${port}`);
+  else console.log(`[server]: Server is running at https://api.stream.gift`);
 });
