@@ -110,8 +110,8 @@
           "notNull": false,
           "default": false
         },
-        "notificationSound": {
-          "name": "notificationSound",
+        "notificationsound": {
+          "name": "notificationsound",
           "type": "boolean",
           "primaryKey": false,
           "notNull": false,

@@ -17,6 +17,7 @@ import { donations, users } from "./db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { checkSUINS } from "./lib/api/check";
 import { SignedAddress } from "./lib/types";
+
 const LOCAL = process.env.LOCAL
 dotenv.config();
 
@@ -32,14 +33,13 @@ const mainnet_client = new SuiClient({
     url: getFullnodeUrl('mainnet'),
     // The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
 });
+
 let pk = !LOCAL ? fs.readFileSync(String(process.env.SSH_PK_DIRECTORY)) : ''
 let cert = !LOCAL ? fs.readFileSync(String(process.env.SSH_CERT_DIRECTORY)) : ''
 
 let cred = { cert: cert, key: pk }
 
-
 const app: Express = express();
-
 const server = require('https').createServer(cred, app);
 const _server = require('http').createServer(app); // local
 const port = process.env.PORT || 4000;
@@ -108,7 +108,6 @@ app.get('/incoming_donation', async (req, res) => {
   let signature = req.query?.signature
 
  
-  console.log(streamer)
   if (!String(message)) {
     let tx_block = await fetchIncomingTxBlock(devnet_client, String(digest)) 
     if (tx_block) {
@@ -164,6 +163,26 @@ app.get('/check_new_donations', async (req, res) => {
   return res.status(400).send({});
 })
 
+app.get('/recent-donations', async (req, res) => {
+  let db = await connectDatabase();
+
+  let limit = 7;
+  const last_n_donations = await db
+    .select({
+      sender: donations.sender,
+      sender_suins: donations.sender_suins,
+      recipient: donations.recipient,
+      amount: donations.amount,
+      message: donations.message,
+      completed: donations.completed,
+    })
+    .from(donations)
+    .where(sql`completed = ${true}`)
+    .limit(limit);
+
+  return res.send({ donations: last_n_donations })
+});
+
 /* AUTH ENDPOINTS */
 app.post("/login-streamer", async (req, res) => {
   let id_token = req.body?.token || null;
@@ -209,7 +228,7 @@ app.post("/login-streamer", async (req, res) => {
 })
 
 app.post("/update-streamer", verifyJwt, async (req: any, res) => {
-  const updatableFields = ["handle", "notificationSound"]; // TODO: add preference values like textToSpeech and notificationSound
+  const updatableFields = ["handle", "notificationsound"]; // TODO: add preference values like textToSpeech and notificationsound
   const { update } : { update: any } = req.body;
 
   if (!update) return res.status(400).json({
@@ -238,7 +257,7 @@ app.post("/update-streamer", verifyJwt, async (req: any, res) => {
 
       return { validation: true }
     },
-    "notificationSound": (s: Boolean): RuleInterface => {
+    "notificationsound": (s: Boolean): RuleInterface => {
       if (typeof s !== "boolean") return {
         validation: false,
         reason: "Invalid input"
@@ -307,8 +326,9 @@ app.get("/get-streamer", async (req: any, res) => {
     suins: user.suins,
     preferred_username: user.preferred_username,
     streamer_address: user.streamer_address,
-    notificationSound: user.notificationSound,
-    textToSpeech: user.textToSpeech,
+    notificationsound: user?.notificationsound || false,
+    textToSpeech: user?.textToSpeech || false,
+    signature: user?.signature || null
   }});
 })
 
@@ -317,26 +337,29 @@ app.get("/check-streamer", verifyJwt, async (req: any, res) => {
     suins: req.user.suins,
     preferred_username: req.user.preferred_username,
     streamer_address: req.user.streamer_address,
-    notificationSound: req.user.notificationSound,
-    textToSpeech: req.user.textToSpeech,
+    notificationsound: req.user?.notificationsound || false,
+    textToSpeech: req.user?.textToSpeech || false,
+    signature: req.user?.signature || null,
   }});
   return res.status(401);
 })
 
 app.post('/verifySignedAddress', async (req, res) => {
   let body : SignedAddress = req.body
-  console.log(body)
   //TODO: VERIFY signature
-  
+
   const db = await connectDatabase();
-  const update = await db.update(users).set({signature: body.signature, streamer_address: body.address}).where(eq(users.preferred_username, body.streamer))
-  if (update) res.json({status: true});
-  else res.json({status: false})
+  const update = await db.update(users)
+    .set({signature: body.signature, streamer_address: body.address})
+    .where(eq(users.preferred_username, body.streamer))
+
+  if (update) return res.json({status: true});
+  return res.json({status: false})
 })
 
 
 
-								
+
 
 
 
@@ -356,6 +379,7 @@ function verifyJwt(req: any, res: any, next: any) {
 
           // Check user login
           const db = await connectDatabase();
+
           const user_from_db = await db.query.users.findMany({
             where: (users, { eq }) => eq(users.secret, secret),
           });
@@ -372,6 +396,7 @@ function verifyJwt(req: any, res: any, next: any) {
       });
     } else return res.status(401);
   } catch (e) {
+    console.error(e);
     return res.status(401);
   }
 }
@@ -404,3 +429,6 @@ function verifyJwtFunc(token: string) {
 }
 
 // Listener
+server.listen(port, () => {
+  console.log(`[server]: Server is running at http://localhost:${port}`);
+});
