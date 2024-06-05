@@ -24,7 +24,7 @@ const LOCAL = process.env.LOCAL
 // Package is on Testnet.
 const devnet_client = new SuiClient({
     // The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
-      url: getFullnodeUrl('devnet'),
+      url: getFullnodeUrl('testnet'),
       // The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
 });
 
