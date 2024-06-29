@@ -25,7 +25,6 @@ export async function fetchIncomingTxBlock(client: SuiClient, digest: string) {
       }
     }
     if (tx_block) return tx_block
-
 }
 
 export const validateValues = async (client: SuiClient, tx_block:SuiTransactionBlockResponse, sender:string, recipient:string, message:string|undefined) => {

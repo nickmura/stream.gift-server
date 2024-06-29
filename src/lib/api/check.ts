@@ -4,6 +4,17 @@ import { CollectionItem } from "../types";
 const pageIndex = 2
 const pageLength = 50 
 
+
+export async function checkMobileDonation(address:string, timestamp: number) { // Works only for main-net.
+    const account:any = checkAccountActivity(address)
+    try {
+        
+    } catch (error) {
+        console.log(error)
+    }
+    // return res?.result.data
+}
+
 export async function checkAccountActivity(address:string) { // Works only for main-net.
     const api = `https://api.blockvision.org/v2/sui/account/activities`
     try {
@@ -16,7 +27,8 @@ export async function checkAccountActivity(address:string) { // Works only for m
         if (!res.ok) console.log(res.status, res.statusText)
         res = await res.json()
         console.log(`checkAccountActivity (${address}):`, res) //@ts-ignore
-        await RecordDataCache(res.result.data ?? { null: null })  //@ts-ignore
+        return res.data
+
     } catch (error) { //@ts-ignore
         console.log(error?.message)
     }

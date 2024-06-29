@@ -15,11 +15,11 @@ import { fetchIncomingTxBlock, validateValues, insertDonationData } from "./lib/
 import { connectDatabase } from "./db/config";
 import { donations, users } from "./db/schema";
 import { eq, sql, and } from "drizzle-orm";
-import { checkSUINS } from "./lib/api/check";
+import { checkAccountActivity, checkMobileDonation, checkSUINS } from "./lib/api/check";
 import { SignedAddress } from "./lib/types";
 
 dotenv.config();
-const LOCAL = process.env.LOCAL
+const LOCAL = process.env.LOCAL  ?? false
 
 // Package is on Testnet.
 const devnet_client = new SuiClient({
@@ -61,7 +61,11 @@ let JSONPackage = {"Package":`${Package}`}
 //const MoveEventType = '<PACKAGE_ID>::<MODULE_NAME>::<METHOD_NAME>';
 const MoveEventType = `${Package}::transfer_to_sender::tip`;
 
-
+// Listener
+server.listen(LOCAL ? port : 443, () => {
+  if (LOCAL) console.log(`[server]: Server is running at http://localhost:${port}`);
+  else console.log(`[server]: Server is running at https://api.stream.gift`);
+});
 setInterval(async () => {
   // await RetrieveAccountActivity()
 
@@ -155,6 +159,21 @@ app.get('/check_new_donations', async (req, res) => {
 
   return res.status(400).send({});
 })
+
+app.get('/check_new_qr', async (req, res) => {
+  let message_b64 = req.query?.message
+  let address = String(req.query?.address)
+  let timestamp = new Date().getUTCMilliseconds()
+  let account = await checkMobileDonation(address, timestamp)
+
+  //TODO: check latest block
+  // query blockvision api 
+  // if a transaction is newer 
+  let network 
+
+  return res.status(400).send({});
+})
+
 
 app.get('/recent-donations', async (req, res) => {
   let db = await connectDatabase();
@@ -421,8 +440,3 @@ function verifyJwtFunc(token: string) {
   })
 }
 
-// Listener
-server.listen(LOCAL ? port : 443, () => {
-  if (LOCAL) console.log(`[server]: Server is running at http://localhost:${port}`);
-  else console.log(`[server]: Server is running at https://api.stream.gift`);
-});
