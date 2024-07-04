@@ -71,6 +71,20 @@
       "when": 1717299248341,
       "tag": "0009_lazy_bloodstorm",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1720132074785,
+      "tag": "0010_bumpy_albert_cleary",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1720132111762,
+      "tag": "0011_early_mother_askani",
+      "breakpoints": true
     }
   ]
 }

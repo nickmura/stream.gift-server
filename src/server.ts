@@ -11,7 +11,7 @@ import dotenv from "dotenv";
 import cors from 'cors';
 
 import { getFullnodeUrl, SuiClient, SuiHTTPTransport } from "@mysten/sui.js/client";
-import { fetchIncomingTxBlock, validateValues, insertDonationData } from "./lib/api/incoming";
+import { fetchIncomingTxBlock, validateValuesSui, insertDonationData } from "./lib/api/incoming";
 import { connectDatabase } from "./db/config";
 import { donations, users } from "./db/schema";
 import { eq, sql, and } from "drizzle-orm";
@@ -99,6 +99,8 @@ setInterval(async () => {
 
 app.get('/incoming_donation', async (req, res) => {
   let streamer = req.query?.streamer // where this is an id or an address
+  let network = req.query?.network
+  
   let digest = req.query?.digest
   let sender = req.query?.sender
   let message = req.query?.message
@@ -109,7 +111,7 @@ app.get('/incoming_donation', async (req, res) => {
     let tx_block = await fetchIncomingTxBlock(devnet_client, String(digest)) 
     if (tx_block) {
       console.log('no message submitted')
-      let donation = await validateValues(mainnet_client, tx_block, String(sender),  String(streamer), undefined)
+      let donation = await validateValuesSui(mainnet_client, tx_block, String(sender),  String(streamer), undefined)
       console.log('Donation', donation) //@ts-ignore
       if (donation) await insertDonationData(donation)
         return res.json({status: 'success', tx: digest})
@@ -120,7 +122,7 @@ app.get('/incoming_donation', async (req, res) => {
     console.log('message submitted...')
     let tx_block = await fetchIncomingTxBlock(devnet_client, String(digest)) 
     if (tx_block) {
-      let donation = await validateValues(devnet_client, tx_block, String(sender), String(streamer), String(message) ?? undefined) // to get SUINS
+      let donation = await validateValuesSui(devnet_client, tx_block, String(sender), String(streamer), String(message) ?? undefined) // to get SUINS
       console.log('Donation', donation) //@ts-ignore
       if (donation) await insertDonationData(donation)
         return res.json({status: 'success', tx: digest})

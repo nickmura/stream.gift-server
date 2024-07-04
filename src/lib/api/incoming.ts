@@ -27,7 +27,7 @@ export async function fetchIncomingTxBlock(client: SuiClient, digest: string) {
     if (tx_block) return tx_block
 }
 
-export const validateValues = async (client: SuiClient, tx_block:SuiTransactionBlockResponse, sender:string, recipient:string, message:string|undefined) => {
+export const validateValuesSui = async (client: SuiClient, tx_block:SuiTransactionBlockResponse, sender:string, recipient:string, message:string|undefined) => {
     
   if (tx_block.balanceChanges) if (tx_block.balanceChanges.length > 0) {
     console.log('sender, address',tx_block.balanceChanges[0].owner)
