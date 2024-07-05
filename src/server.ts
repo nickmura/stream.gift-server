@@ -108,27 +108,33 @@ app.get('/incoming_donation', async (req, res) => {
 
  
   if (!String(message)) {
-    let tx_block = await fetchIncomingTxBlock(devnet_client, String(digest)) 
-    if (tx_block) {
-      console.log('no message submitted')
-      let donation = await validateValuesSui(mainnet_client, tx_block, String(sender),  String(streamer), undefined)
-      console.log('Donation', donation) //@ts-ignore
-      if (donation) await insertDonationData(donation)
-        return res.json({status: 'success', tx: digest})
+    if (network == 'theta') {
+        //call from lib/test fetchIncomingTxDataTheta(tx_hash:string)
     } else {
-      res.json({status: 'invalid'})
+    //   let tx_block = await fetchIncomingTxBlock(devnet_client, String(digest)) 
+    //   if (tx_block) {
+    //     console.log('no message submitted')
+    //     // let donation = await validateValuesSui(mainnet_client, tx_block, String(sender),  String(streamer), undefined)
+    //     let donation
+    //     console.log('Donation', donation) //@ts-ignore
+    //     if (donation) await insertDonationData(donation)
+    //       return res.json({status: 'success', tx: digest})
+    //   } else {
+    //     res.json({status: 'invalid'})
+    //   }
+    // } else {
+    //   console.log('message submitted...')
+    //   let tx_block = await fetchIncomingTxBlock(devnet_client, String(digest)) 
+    //   if (tx_block) {
+    //     let donation = await validateValuesSui(devnet_client, tx_block, String(sender), String(streamer), String(message) ?? undefined) // to get SUINS
+    //     console.log('Donation', donation) //@ts-ignore
+    //     if (donation) await insertDonationData(donation)
+    //       return res.json({status: 'success', tx: digest})
+    //   } else {
+    //     res.json({status: 'invalid'})
+    //   }
     }
-  } else {
-    console.log('message submitted...')
-    let tx_block = await fetchIncomingTxBlock(devnet_client, String(digest)) 
-    if (tx_block) {
-      let donation = await validateValuesSui(devnet_client, tx_block, String(sender), String(streamer), String(message) ?? undefined) // to get SUINS
-      console.log('Donation', donation) //@ts-ignore
-      if (donation) await insertDonationData(donation)
-        return res.json({status: 'success', tx: digest})
-    } else {
-      res.json({status: 'invalid'})
-    }
+
   }
 })
 
@@ -338,7 +344,9 @@ app.get("/get-streamer", async (req: any, res) => {
 
   return res.send({user: {
     suins: user.suins,
+    tns: user.tns,
     preferred_username: user.preferred_username,
+    evm_streamer_address: user.evm_streamer_address,
     streamer_address: user.streamer_address,
     notificationsound: user?.notificationsound || false,
     textToSpeech: user?.textToSpeech || false,
