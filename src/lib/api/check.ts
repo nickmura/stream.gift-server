@@ -1,9 +1,35 @@
-import { CollectionItem } from "../types";
+import { connectDatabase } from "../../db/config";
+import { users } from "../../db/schema";
+import { ethers} from 'ethers'
+import { eq } from "drizzle-orm";
+import { BalanceChange, BalanceChangesResponse, CollectionItem } from "../types";
 
 
 const pageIndex = 2
 const pageLength = 50 
 
+export function validateValues(tx_data:BalanceChangesResponse, streamer_address:string, sender_address:string) {
+    let balanceChanges = tx_data.BalanceChanges
+
+    let streamer = balanceChanges[balanceChanges.findIndex((balance:BalanceChange) => balance.address == streamer_address && !balance.is_negative )]
+    
+    let sender = balanceChanges[balanceChanges.findIndex((balance:BalanceChange) => balance.address == sender_address && balance.is_negative )]
+    if (streamer.address == streamer_address) {
+    streamer.tfuel = ethers.utils.formatEther(String(streamer.delta))
+    sender.tfuel = ethers.utils.formatEther(String(sender.delta))
+    
+      return { streamer: streamer, sender: sender }
+    } else {
+      return false
+    }
+  }
+
+export const getStreamerAddress = async (streamer:string) => {
+    const db = await connectDatabase()
+    const user_from_db = await db.select().from(users).where(eq(users.preferred_username, streamer));
+    console.log(user_from_db[0])
+    return String(user_from_db[0].evm_streamer_address?.toLowerCase())
+}
 
 export async function checkMobileDonation(address:string, timestamp: number) { // Works only for main-net.
     const account:any = checkAccountActivity(address)

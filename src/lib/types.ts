@@ -1,4 +1,19 @@
-export type Donation = {
+
+
+export interface BalanceChangesResponse {
+    TxHash: String,
+    BalanceChanges: BalanceChange[]
+  
+  }
+  
+export type BalanceChange = {
+    address: string,
+    token_type: number,
+    is_negative: boolean,
+    delta: number // Amount in WEI
+    tfuel: string // delta in denominated form
+  }
+export type Donation = { //TODO UPDATES THESE TYPES
     digest: string,
     sender: string,
     sender_suins: string,

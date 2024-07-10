@@ -10,12 +10,12 @@ import { v4 as uuidv4 } from 'uuid';
 import dotenv from "dotenv";
 import cors from 'cors';
 
-import { insertDonationData, fetchIncomingTxDataTheta } from "./lib/api/incoming";
+import { insertDonationData, fetchIncomingTxDataTheta, recordDonation } from "./lib/api/incoming";
 import { connectDatabase } from "./db/config";
 import { donations, users } from "./db/schema";
 import { eq, sql, and } from "drizzle-orm";
-import { checkAccountActivity, checkMobileDonation, checkSUINS } from "./lib/api/check";
-import { SignedAddress } from "./lib/types";
+import { checkAccountActivity, checkMobileDonation, checkSUINS, getStreamerAddress, validateValues } from "./lib/api/check";
+import { BalanceChangesResponse, SignedAddress } from "./lib/types";
 
 dotenv.config();
 const LOCAL = process.env.LOCAL  ?? false
@@ -90,15 +90,31 @@ app.get('/incoming_donation', async (req, res) => {
   let network = req.query?.network
   
   let digest = req.query?.digest
-
+  let tx_hash = req.query?.tx_hash
   let sender = req.query?.sender
   let message = req.query?.message
   let signature = req.query?.signature
-
+  console.log('test')
  
-  if (!String(message)) {
     if (network == 'theta') {
-        let tx = await fetchIncomingTxDataTheta(String(digest))
+
+        let tx = await fetchIncomingTxDataTheta(String(tx_hash))
+        let tx_data:BalanceChangesResponse = tx.blance_changes
+        let streamer_address = await getStreamerAddress(String(streamer))
+        console.log('streamer address found')
+        if (tx && streamer_address) {
+          const validate = validateValues(tx_data, streamer_address, String(sender))
+          if (validate) {
+            console.log('validated tx values... now recording...')
+
+            let streamer = validate['streamer']
+            let sender = validate['sender']
+            const donate = await recordDonation(String(tx_hash), streamer, sender, String(message ?? ''))
+            if (donate) if (donate.length) console.log('success', donate); res.json({status: '400', statusText: 'success', tx_hash})
+          } else {
+            
+          }
+        
 
         
     } else {
@@ -242,6 +258,7 @@ app.post("/login-streamer", async (req, res) => {
   return res.send({ token });
 })
 
+
 app.post("/update-streamer", verifyJwt, async (req: any, res) => {
   const updatableFields = ["handle", "notificationsound"]; // TODO: add preference values like textToSpeech and notificationsound
   const { update } : { update: any } = req.body;
@@ -352,6 +369,7 @@ app.get("/get-streamer", async (req: any, res) => {
 app.get("/check-streamer", verifyJwt, async (req: any, res) => {
   if (req?.user) return res.send({ user: {
     suins: req.user.suins,
+    tns: req.user?.tns,
     preferred_username: req.user.preferred_username,
     streamer_address: req.user.streamer_address,
     notificationsound: req.user?.notificationsound || false,
@@ -367,7 +385,7 @@ app.post('/verifySignedAddress', async (req, res) => {
 
   const db = await connectDatabase();
   const update = await db.update(users)
-    .set({signature: body.signature, streamer_address: body.address})
+    .set({signature: body.signature, evm_streamer_address: body.address})
     .where(eq(users.preferred_username, body.streamer))
 
   if (update) return res.json({status: true});

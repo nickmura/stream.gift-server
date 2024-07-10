@@ -1,6 +1,6 @@
 import { connectDatabase } from "../../db/config";
 import { donations } from "../../db/schema";
-import { Donation } from "@/lib/types";
+import { BalanceChange, Donation } from "../types";
 
 
 
@@ -9,20 +9,20 @@ import 'isomorphic-fetch'
 
 
 
+
 export async function fetchIncomingTxDataTheta(tx_hash:string) {
   const provider = new thetajs.providers.HttpProvider();
-
+  
+  let check_already_processed = false //TODO: change this to a select in donations where tx_hash == tx_hash (should return 0)
+  if (check_already_processed) return false
   let tx_data
   let i = 0;
-
-
+  console.log('fetching tx...')
   while (i <= 50 && !tx_data) {
     try {
       
       const tx = await provider.getTransaction(tx_hash)
-      console.log(tx)
       if (tx) {
-        tx_data = tx_data
         return tx
       } else {
         tx_data = undefined 
@@ -34,7 +34,6 @@ export async function fetchIncomingTxDataTheta(tx_hash:string) {
   }
   if (tx_data) return tx_data
 } 
-
 
 // export async function fetchIncomingTxBlockSui(client: SuiClient, digest: string) {
 
@@ -86,7 +85,24 @@ export async function fetchIncomingTxDataTheta(tx_hash:string) {
 //   } else { return false }
 // }
 
-
+export async function recordDonation(tx_hash: string, streamer:BalanceChange, sender:BalanceChange, message_b64:string) {
+  try {
+    const db = await connectDatabase();
+    const insert = await db.insert(donations).values({
+      tx_hash: tx_hash, 
+      sender: sender.address, 
+      sender_tns: null, 
+      recipient: streamer.address, 
+      amount: String(streamer.tfuel), 
+      message: message_b64 ?? null, 
+      completed: false
+    }).returning();
+    
+    return insert
+  } catch (error) {
+    console.log(error)
+  }
+}
 
 export async function insertDonationData(donation:Donation) {
   const db = await connectDatabase();
