@@ -5,7 +5,7 @@
   "scripts": {
     "build": "npx tsc",
     "dev": "npx tsc && node ./build/server.js",
-    "test": "node ./build/lib/test.js",
+    "test": "npx tsc && node ./build/lib/test.js",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
     "drop": "drizzle-kit drop"
@@ -21,6 +21,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.30.10",
+    "ethers": "^5.7.0",
     "express": "^4.19.2",
     "isomorphic-fetch": "^3.0.0",
     "jsonwebtoken": "^9.0.2",

@@ -67,3 +67,8 @@ export async function checkSUINS(address:string) { // Works only for main-net.
     }
 
 }
+
+export async function checkTNS(address:string) { 
+
+}
+

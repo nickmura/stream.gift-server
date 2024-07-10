@@ -10,8 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import dotenv from "dotenv";
 import cors from 'cors';
 
-import { getFullnodeUrl, SuiClient, SuiHTTPTransport } from "@mysten/sui.js/client";
-import { fetchIncomingTxBlock, validateValuesSui, insertDonationData } from "./lib/api/incoming";
+import { insertDonationData, fetchIncomingTxDataTheta } from "./lib/api/incoming";
 import { connectDatabase } from "./db/config";
 import { donations, users } from "./db/schema";
 import { eq, sql, and } from "drizzle-orm";
@@ -21,18 +20,7 @@ import { SignedAddress } from "./lib/types";
 dotenv.config();
 const LOCAL = process.env.LOCAL  ?? false
 
-// Package is on Testnet.
-const devnet_client = new SuiClient({
-    // The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
-      url: getFullnodeUrl('testnet'),
-      // The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
-});
 
-const mainnet_client = new SuiClient({
-  // The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
-    url: getFullnodeUrl('mainnet'),
-    // The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
-});
 
 let pk = !LOCAL ? fs.readFileSync(String(process.env.SSH_PK_DIRECTORY)) : ''
 let cert = !LOCAL ? fs.readFileSync(String(process.env.SSH_CERT_DIRECTORY)) : ''
@@ -102,6 +90,7 @@ app.get('/incoming_donation', async (req, res) => {
   let network = req.query?.network
   
   let digest = req.query?.digest
+
   let sender = req.query?.sender
   let message = req.query?.message
   let signature = req.query?.signature
@@ -109,7 +98,9 @@ app.get('/incoming_donation', async (req, res) => {
  
   if (!String(message)) {
     if (network == 'theta') {
-        //call from lib/test fetchIncomingTxDataTheta(tx_hash:string)
+        let tx = await fetchIncomingTxDataTheta(String(digest))
+
+        
     } else {
     //   let tx_block = await fetchIncomingTxBlock(devnet_client, String(digest)) 
     //   if (tx_block) {
@@ -144,6 +135,10 @@ app.get('/check_suins', async (req, res) => {
   const suins = await checkSUINS(String(address))
   if (suins) res.json(suins)
   else res.json({status: 'null'})
+})
+
+app.get('/check_tns', async (req, res) => {
+
 })
 
 

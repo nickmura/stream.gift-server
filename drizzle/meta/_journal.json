@@ -85,6 +85,13 @@
       "when": 1720132111762,
       "tag": "0011_early_mother_askani",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1720398195277,
+      "tag": "0012_shiny_nomad",
+      "breakpoints": true
     }
   ]
 }

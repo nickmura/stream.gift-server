@@ -1,111 +1,90 @@
 import { connectDatabase } from "../../db/config";
 import { donations } from "../../db/schema";
 import { Donation } from "@/lib/types";
-import { SuiClient, SuiTransactionBlockResponse } from "@mysten/sui.js/dist/cjs/client";
-import { checkSUINS } from "./check";
-import { Axios } from 'axios'
-const axios = new Axios()
-export async function fetchIncomingTxBlock(client: SuiClient, digest: string) {
 
-    let tx_block = undefined
-    let i = 0;
-    while (i <= 50 && !tx_block) {
-      try {
-        console.log('requesting...', digest)
-        let tx = await client.getTransactionBlock({ digest: digest, options: { showBalanceChanges: true, showEvents: true,  }});
-        if (tx) {
-          console.log('success, found tx block, ', tx)
-          tx_block = tx
-          break;
-        } else {
-          tx_block = undefined 
-          i++;
-        }
-      } catch (error) { //@ts-ignore
-        console.log(error.message)
-      }
-    }
-    if (tx_block) return tx_block
-}
-export async function fetchIncomingTxBlockTheta(tx:string) {
 
-  let tx_block = undefined
+
+import * as thetajs from '@thetalabs/theta-js'
+import 'isomorphic-fetch'
+
+
+
+export async function fetchIncomingTxDataTheta(tx_hash:string) {
+  const provider = new thetajs.providers.HttpProvider();
+
+  let tx_data
   let i = 0;
-  while (i <= 50 && !tx_block) {
+
+
+  while (i <= 50 && !tx_data) {
     try {
-      const payload = {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_getBalance",
-        params: [{"hash":"0xf3cc94af7a1520b384999ad106ade9738b6cde66e2377ceab37067329d7173a0"}],
-    };
-
-      const tx = await axios.post(`https://eth-rpc-api.thetatoken.org/rpc`, payload)
-      console.log(tx.data)
-      if (tx.data) {
-
-        break;
-      } else {
-        tx_block = undefined 
-        i++;
-      }
-    } catch (error) { //@ts-ignore
-      console.log(error.message)
-    }
-  }
-  if (tx_block) return tx_block
-}
-
-
-export async function fetchIncomingTxBlockSui(client: SuiClient, digest: string) {
-
-  let tx_block = undefined
-  let i = 0;
-  while (i <= 50 && !tx_block) {
-    try {
-      console.log('requesting...', digest)
-      let tx = await client.getTransactionBlock({ digest: digest, options: { showBalanceChanges: true, showEvents: true,  }});
+      
+      const tx = await provider.getTransaction(tx_hash)
+      console.log(tx)
       if (tx) {
-        console.log('success, found tx block, ', tx)
-        tx_block = tx
-        break;
+        tx_data = tx_data
+        return tx
       } else {
-        tx_block = undefined 
+        tx_data = undefined 
         i++;
       }
     } catch (error) { //@ts-ignore
       console.log(error.message)
     }
   }
-  if (tx_block) return tx_block
-}
-export const validateValuesSui = async (client: SuiClient, tx_block:SuiTransactionBlockResponse, sender:string, recipient:string, message:string|undefined) => {
+  if (tx_data) return tx_data
+} 
+
+
+// export async function fetchIncomingTxBlockSui(client: SuiClient, digest: string) {
+
+//   let tx_block = undefined
+//   let i = 0;
+//   while (i <= 50 && !tx_block) {
+//     try {
+//       console.log('requesting...', digest)
+//       let tx = await client.getTransactionBlock({ digest: digest, options: { showBalanceChanges: true, showEvents: true,  }});
+//       if (tx) {
+//         console.log('success, found tx block, ', tx)
+//         tx_block = tx
+//         break;
+//       } else {
+//         tx_block = undefined 
+//         i++;
+//       }
+//     } catch (error) { //@ts-ignore
+//       console.log(error.message)
+//     }
+//   }
+//   if (tx_block) return tx_block
+// }
+// export const validateValuesSui = async (client: SuiClient, tx_block:SuiTransactionBlockResponse, sender:string, recipient:string, message:string|undefined) => {
     
-  if (tx_block.balanceChanges) if (tx_block.balanceChanges.length > 0) {
-    console.log('sender, address',tx_block.balanceChanges[0].owner)
-    let r = tx_block.balanceChanges.findIndex(balance => balance.owner?.AddressOwner == recipient ) // checks whether or not the address (streamer) has received a balance change (donation)
-    let s = tx_block.balanceChanges.findIndex(balance => balance.owner?.AddressOwner == sender ) // checks whether or not the address (streamer) has received a balance change (donation)
-    console.log(r, s)
+//   if (tx_block.balanceChanges) if (tx_block.balanceChanges.length > 0) {
+//     console.log('sender, address',tx_block.balanceChanges[0].owner)
+//     let r = tx_block.balanceChanges.findIndex(balance => balance.owner?.AddressOwner == recipient ) // checks whether or not the address (streamer) has received a balance change (donation)
+//     let s = tx_block.balanceChanges.findIndex(balance => balance.owner?.AddressOwner == sender ) // checks whether or not the address (streamer) has received a balance change (donation)
+//     console.log(r, s)
 
-    if (r > -1 && s > -1) {
-      const senderSUINS = await checkSUINS(String(sender))
+//     if (r > -1 && s > -1) {
+//       const senderSUINS = await checkSUINS(String(sender))
       
-      console.log(tx_block.balanceChanges[s].owner, tx_block.balanceChanges[s].owner.AddressOwner)
+//       console.log(tx_block.balanceChanges[s].owner, tx_block.balanceChanges[s].owner.AddressOwner)
       
-      const donation = {
-        digest: tx_block.digest,
-        sender: tx_block.balanceChanges[s].owner.AddressOwner,
-        sender_suins: senderSUINS?.name ?? undefined,
-        recipient: tx_block.balanceChanges[r].owner.AddressOwner,
-        amount: Number(tx_block.balanceChanges[r].amount) / 1000000000, // MIST per SUI
-        message: message, // TODO: set this
-      }
-      return donation
-    }
-    else return false
+//       const donation = {
+//         digest: tx_block.digest,
+//         sender: tx_block.balanceChanges[s].owner.AddressOwner,
+//         sender_suins: senderSUINS?.name ?? undefined,
+//         recipient: tx_block.balanceChanges[r].owner.AddressOwner,
+//         amount: Number(tx_block.balanceChanges[r].amount) / 1000000000, // MIST per SUI
+//         message: message, // TODO: set this
+//       }
+//       return donation
+//     }
+//     else return false
 
-  } else { return false }
-}
+//   } else { return false }
+// }
 
 
 

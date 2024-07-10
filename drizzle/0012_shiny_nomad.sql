@@ -1,0 +1,1 @@
+ALTER TABLE "donations" ADD COLUMN "tx_hash" text;

@@ -1,7 +1,14 @@
 
 
+import { connectDatabase } from '../db/config';
+import { donations, users } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import * as thetajs from '@thetalabs/theta-js'
+import { ethers } from 'ethers';
 import 'isomorphic-fetch'
+import dotenv from 'dotenv'
+
+dotenv.config();
 
 export async function fetchIncomingTxDataTheta(tx_hash:string) {
     const provider = new thetajs.providers.HttpProvider();
@@ -14,8 +21,8 @@ export async function fetchIncomingTxDataTheta(tx_hash:string) {
       try {
         
         const tx = await provider.getTransaction(tx_hash)
-        console.log(tx)
         if (tx) {
+          return tx
           break;
         } else {
           tx_data = undefined 
@@ -27,3 +34,72 @@ export async function fetchIncomingTxDataTheta(tx_hash:string) {
     }
     if (tx_data) return tx_data
   } fetchIncomingTxDataTheta('0x22cbf9172dd563a2b135c5efc69339a9847007312fc9ac5a478c57a5fc52562a')
+
+type BalanceChangesResponse = {
+  TxHash: String,
+  BalanceChanges: BalanceChange[]
+
+}
+
+type BalanceChange = {
+  address: string,
+  token_type: number,
+  is_negative: boolean,
+  delta: number // Amount in WEI
+  tfuel: string // delta in denominated form
+}
+ function validateValues(tx_data:BalanceChangesResponse, streamer_address:string, sender_address:string) {
+    console.log(streamer_address, sender_address)
+    let balanceChanges = tx_data.BalanceChanges
+
+    let streamer = balanceChanges[balanceChanges.findIndex((balance:BalanceChange) => balance.address == streamer_address && !balance.is_negative )]
+    
+    let sender = balanceChanges[balanceChanges.findIndex((balance:BalanceChange) => balance.address == sender_address && balance.is_negative )]
+    if (streamer.address == streamer_address) {
+    streamer.tfuel = ethers.utils.formatEther(String(streamer.delta))
+    sender.tfuel = ethers.utils.formatEther(String(sender.delta))
+    
+      return { streamer: streamer, sender: sender }
+    } else {
+      return false
+    }
+  }
+  
+
+  async function RunTest(tx_hash:string, reqStreamer:string, sender_address:string, reqMessage:string) {
+    console.log(tx_hash, reqStreamer, sender_address, reqMessage)
+    const tx = await fetchIncomingTxDataTheta(tx_hash) //@ts-ignore
+    const streamer_address = await getStreamerAddress(reqStreamer)
+    console.log(streamer_address)
+
+    const validate = validateValues(tx.blance_changes, streamer_address, sender_address)
+    if (validate) {
+      //TODO: RECORDING THE TRANSACTION
+      let streamer = validate['streamer']
+      let sender = validate['sender']
+      const donate = await recordDonation(tx_hash, streamer, sender, reqMessage)
+      console.log(donate)
+
+    }
+
+
+
+
+  } RunTest('0x22cbf9172dd563a2b135c5efc69339a9847007312fc9ac5a478c57a5fc52562a', 'nickmura2', `0x4ae87a25b78fe0b7d6a9a37aad75bc3f01c61094`, `sdiojdsojigdjiodg`)
+
+  const getStreamerAddress = async (streamer:string) => {
+    const db = await connectDatabase()
+    const user_from_db = await db.select().from(users).where(eq(users.preferred_username, streamer));
+    console.log(user_from_db[0])
+    return String(user_from_db[0].evm_streamer_address?.toLowerCase())
+  }
+
+  async function recordDonation(tx_hash: string, streamer:BalanceChange, sender:BalanceChange, message_b64:string) {
+    try {
+      const db = await connectDatabase();
+      const insert = await db.insert(donations).values({tx_hash: tx_hash, sender: sender.address, sender_tns: null, recipient: streamer.address, amount: String(streamer.tfuel), message: message_b64 ?? null, completed: false}).returning()
+      return insert
+    } catch (error) {
+      console.log(error)
+    }
+  }

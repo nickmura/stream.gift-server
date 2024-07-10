@@ -2,7 +2,7 @@ import { defineConfig } from "drizzle-kit";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 import { Client } from "pg";
-
+import 'dotenv'
 
 export default defineConfig({
   dialect: "postgresql", // "mysql" | "sqlite" | "postgresql"

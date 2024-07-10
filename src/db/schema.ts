@@ -4,6 +4,7 @@ import { serial, text, timestamp, pgTable, decimal, boolean } from "drizzle-orm/
 export const donations = pgTable("donations", {
   id: serial("id"),
   digest: text("digest"),
+  tx_hash: text("tx_hash"),
   sender: text("sender"),
   sender_suins: text('sender_suins'),
   sender_tns: text('sender_tns'),
