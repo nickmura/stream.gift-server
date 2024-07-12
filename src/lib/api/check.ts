@@ -2,7 +2,7 @@ import { connectDatabase } from "../../db/config";
 import { users } from "../../db/schema";
 import { ethers} from 'ethers'
 import { eq } from "drizzle-orm";
-import { BalanceChange, BalanceChangesResponse, CollectionItem } from "../types";
+import { BalanceChange, BalanceChangesResponse, CollectionItem, TNSResponseThetaboard } from "../types";
 
 
 const pageIndex = 2
@@ -72,29 +72,36 @@ async function RecordDataCache(res:any) {
 
 
 
-export async function checkSUINS(address:string) { // Works only for main-net.
-    const api = `https://api.blockvision.org/v2/sui/account/nfts`
-    try {
-        console.log('test')
-        let res = await fetch(`${api}?account=${address}`, {
-            headers: {
-                "x-api-key": process.env.BLOCKVISION_API_KEY ?? "",
-            }
-        });
-        if (!res.ok) console.log(res.status, res.statusText)
-        res = await res.json() // @ts-ignore
-        console.log(`checkSUINS (${address}):`, res?.result.data) //@ts-ignore
-        const nfts:CollectionItem[] = res?.result.data //@ts-ignore
-        const suins_index = nfts.findIndex(nft=> nft.collection == `0xd22b24490e0bae52676651b4f56660a5ff8022a2576e0089f79b3c88d44e08f0::suins_registration::SuinsRegistration`)
+// export async function checkSUINS(address:string) { // Works only for main-net.
+//     const api = `https://api.blockvision.org/v2/sui/account/nfts`
+//     try {
+//         console.log('test')
+//         let res = await fetch(`${api}?account=${address}`, {
+//             headers: {
+//                 "x-api-key": process.env.BLOCKVISION_API_KEY ?? "",
+//             }
+//         });
+//         if (!res.ok) console.log(res.status, res.statusText)
+//         res = await res.json() // @ts-ignore
+//         console.log(`checkSUINS (${address}):`, res?.result.data) //@ts-ignore
+//         const nfts:CollectionItem[] = res?.result.data //@ts-ignore
+//         const suins_index = nfts.findIndex(nft=> nft.collection == `0xd22b24490e0bae52676651b4f56660a5ff8022a2576e0089f79b3c88d44e08f0::suins_registration::SuinsRegistration`)
 
-        if (suins_index > -1) return nfts[suins_index]
-    } catch (error) { //@ts-ignore
-        console.log(error?.message)
+//         if (suins_index > -1) return nfts[suins_index]
+//     } catch (error) { //@ts-ignore
+//         console.log(error?.message)
+//     }
+// }
+
+export async function checkTNS(address:string) {
+    let TNSContract = `0x7daeee00fb89d5c46b8e8387fd9aac79d6910a06`
+    let endpoint = `https://thetaboard.io/api/explorer/wallet-nft/${address}?pageNumber=1&search=&artist=&drop=&wallet${address}`
+    let res = await fetch(endpoint) //@ts-ignore
+    if (!res.ok) throw Error(res.error)
+    let tnsResponse:TNSResponseThetaboard = await res.json()
+    let tnsIndex = tnsResponse.NFTs.findIndex(nft => nft.contract_addr == TNSContract && nft.owner == address);
+    if (tnsIndex > -1) { 
+      let tns = tnsResponse.NFTs[tnsIndex].name;
+      return tns;
     }
-
-}
-
-export async function checkTNS(address:string) { 
-
-}
-
+} 

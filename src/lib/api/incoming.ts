@@ -109,5 +109,4 @@ export async function insertDonationData(donation:Donation) {
   const insert = await db.insert(donations).values({digest: donation.digest, sender: donation.sender, sender_suins: donation.sender_suins, recipient: donation.recipient, amount: String(donation.amount), message: donation.message ?? null, completed: false}).returning()
   console.log('insert', insert)
   return insert
-
 }

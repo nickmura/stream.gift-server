@@ -85,7 +85,8 @@ type BalanceChange = {
 
 
 
-  } RunTest('0x22cbf9172dd563a2b135c5efc69339a9847007312fc9ac5a478c57a5fc52562a', 'nickmura2', `0x4ae87a25b78fe0b7d6a9a37aad75bc3f01c61094`, `sdiojdsojigdjiodg`)
+  } 
+  // RunTest('0x22cbf9172dd563a2b135c5efc69339a9847007312fc9ac5a478c57a5fc52562a', 'nickmura2', `0x4ae87a25b78fe0b7d6a9a37aad75bc3f01c61094`, `sdiojdsojigdjiodg`)
 
   const getStreamerAddress = async (streamer:string) => {
     const db = await connectDatabase()
@@ -103,3 +104,47 @@ type BalanceChange = {
       console.log(error)
     }
   }
+
+  async function checkTNS(address:string) {
+    let TNSContract = `0x7daeee00fb89d5c46b8e8387fd9aac79d6910a06`
+    let endpoint = `https://thetaboard.io/api/explorer/wallet-nft/${address}?pageNumber=1&search=&artist=&drop=&wallet${address}`
+    let res = await fetch(endpoint) //@ts-ignore
+    if (!res.ok) throw Error(res.error)
+    let tnsResponse:TNSResponseThetaboard = await res.json()
+    let tnsIndex = tnsResponse.NFTs.findIndex(nft => nft.contract_addr == TNSContract && nft.owner == address);
+    if (tnsIndex > -1) { 
+      let tns = tnsResponse.NFTs[tnsIndex].name;
+      return tns;
+    }
+
+  } 
+  async function callTNS() {
+    let tns = await checkTNS('0x4ae87a25b78fe0b7d6a9a37aad75bc3f01c61094')
+    console.log(tns)
+  } callTNS()
+
+type TNSResponseThetaboard = {
+  totalCount: number,
+  NFTs: TNSResponseNFTs[]
+  
+}
+
+interface TNSResponseNFTs {
+  contract_addr: `0x7daeee00fb89d5c46b8e8387fd9aac79d6910a06`,
+  original_token_id: string,
+  token_id: null,
+  image: string,
+  name: string, // most important
+  description: string,
+  properties: PropertiesObject
+  attributes: null,
+  owner: string
+
+}
+
+type PropertiesObject = {
+  drop: null,
+  assets: [],
+  selling_info: null,
+  offers: []
+}

@@ -14,7 +14,7 @@ import { insertDonationData, fetchIncomingTxDataTheta, recordDonation } from "./
 import { connectDatabase } from "./db/config";
 import { donations, users } from "./db/schema";
 import { eq, sql, and } from "drizzle-orm";
-import { checkAccountActivity, checkMobileDonation, checkSUINS, getStreamerAddress, validateValues } from "./lib/api/check";
+import { checkAccountActivity, checkMobileDonation, checkTNS, getStreamerAddress, validateValues } from "./lib/api/check";
 import { BalanceChangesResponse, SignedAddress } from "./lib/types";
 
 dotenv.config();
@@ -146,15 +146,13 @@ app.get('/incoming_donation', async (req, res) => {
 })
 
 
-app.get('/check_suins', async (req, res) => {
-  const address = req.query?.address  
-  const suins = await checkSUINS(String(address))
-  if (suins) res.json(suins)
-  else res.json({status: 'null'})
-})
+
 
 app.get('/check_tns', async (req, res) => {
-
+  const address = req.query?.address
+  const tns = await checkTNS(String(address));
+  if (tns) res.json({status: true, name: tns, address: address})
+  else res.json({status: false})
 })
 
 

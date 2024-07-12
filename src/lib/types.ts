@@ -39,3 +39,29 @@ export type SignedAddress = {
     signature: string,
     streamer: string,
 }
+
+export type TNSResponseThetaboard = {
+  totalCount: number,
+  NFTs: TNSResponseNFTs[]
+  
+}
+
+interface TNSResponseNFTs {
+  contract_addr: `0x7daeee00fb89d5c46b8e8387fd9aac79d6910a06`,
+  original_token_id: string,
+  token_id: null,
+  image: string,
+  name: string, // most important
+  description: string,
+  properties: PropertiesObject
+  attributes: null,
+  owner: string
+
+}
+
+type PropertiesObject = {
+  drop: null,
+  assets: [],
+  selling_info: null,
+  offers: []
+}
