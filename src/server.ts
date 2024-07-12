@@ -164,7 +164,7 @@ app.get('/check_new_donations', async (req, res) => {
     where: (users, { eq }) => eq(users.preferred_username, username),
   });
 
-  let streamer_address: string = raw_streamer_address?.streamer_address || "";
+  let streamer_address: string = raw_streamer_address?.streamer_address || raw_streamer_address?.evm_streamer_address || '';
   if (!streamer_address) return res.status(400).send({ error_message: "Streamer cannot be found" });
 
   let select = await db.select().from(donations).where(and(sql`recipient = ${streamer_address}`, eq(donations.completed, !true)));
